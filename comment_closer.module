@@ -25,28 +25,20 @@ function comment_closer_help($section) {
   return $output;
 }
 
-function _comment_closer_nodeoptions($nodetypes){
-
-  foreach($nodetypes as $nodetypename){
-    $optionarray[$nodetypename] = $nodetypename;
-  }
-  return $optionarray;
-}
-
 function comment_closer_settings() {
   // list of node types to affect
   // age of nodes to close comments on
   $nodetypes = node_list();
-  $age_limit_list = array(t('year') => t('year'),
-                          t('month') => t('month'),
-                          t('week') => t('week'));
-  $cycle_length_list = array(t('yearly') => t('yearly'),
-                          t('monthly') => t('monthly'),
-                          t('weekly') => t('weekly'),
-                          t('daily') => t('daily'));
+  $age_limit_list = array('year' => t('year'),
+                          'month' => t('month'),
+                          'week' => t('week'));
+  $cycle_length_list = array('yearly' => t('yearly'),
+                          'monthly' => t('monthly'),
+                          'weekly' => t('weekly'),
+                          'daily' => t('daily'));
   $output = form_select(t('Node types'), 'comment_closer_types',
                           variable_get('comment_closer_types', node_list()),
-                          _comment_closer_nodeoptions($nodetypes),
+                          drupal_map_assoc($nodetypes),
                           t('Types of nodes for which comments will be closed'),
                           'size="'.($nodetype_count < 5 ? $nodetype_count: 5).'"', 1).
                           form_select(t('Older than'), 'comment_closer_age',
