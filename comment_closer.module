@@ -10,11 +10,13 @@ function comment_closer_help($section) {
     case 'admin/block/help':
       return t('<p>Automatically close comments</p>');
       break;
-    case "admin/modules/recent_comments":
-      $output = "";
-      break;
     case "admin/modules#description":
-      $output = "Schedule automatic closing of comments for selected node types based on the age of the node";
+      $output = t('Schedule automatic closing of comments for selected node types based on the age of the node');
+      break;
+    case "admin/help#comment_closer":
+      $output = t('<p>The commentcloser module allows you to automatically close comments via a cron hook. You can select any combination of available node types to process,</p><p>Configure the module to close comments on nodes more than one week, month or year old and schedule the closings to be done daily, weekly, monthly or annually</p>
+
+      ');
       break;
     default:
       $output = "";
