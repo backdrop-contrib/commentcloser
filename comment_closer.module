@@ -1,0 +1,130 @@
+<?php
+/* $Id$ */
+/**
+  *comment_closer.module
+  *Automatically close comments on nodes beyond a configurable age
+*/
+
+function comment_closer_help($section) {
+  switch($section) {
+    case 'admin/block/help':
+      return t('<p>Automatically close comments</p>');
+      break;
+    case "admin/modules/recent_comments":
+      $output = "";
+      break;
+    case "admin/modules#description":
+      $output = "Schedule automatic closing of comments for selected node types based on the age of the node";
+      break;
+    default:
+      $output = "";
+      break;
+  }
+  return $output;
+}
+
+function _comment_closer_nodeoptions($nodetypes){
+
+  foreach($nodetypes as $nodetypename){
+    $optionarray[$nodetypename] = $nodetypename;
+  }
+  return $optionarray;
+}
+
+function comment_closer_settings() {
+  // list of node types to affect
+  // age of nodes to close comments on
+  $nodetypes = node_list();
+  $age_limit_list = array(t('year') => t('year'),
+                          t('month') => t('month'),
+                          t('week') => t('week'));
+  $cycle_length_list = array(t('yearly') => t('yearly'),
+                          t('monthly') => t('monthly'),
+                          t('weekly') => t('weekly'),
+                          t('daily') => t('daily'));
+  $output = form_select(t('Node types'), 'comment_closer_types',
+                          variable_get('comment_closer_types', node_list()),
+                          _comment_closer_nodeoptions($nodetypes),
+                          t('Types of nodes for which comments will be closed'),
+                          'size="'.($nodetype_count < 5 ? $nodetype_count: 5).'"', 1).
+                          form_select(t('Older than'), 'comment_closer_age',
+                            variable_get('comment_closer_age', 'month'),
+                            $age_limit_list, t("Age of nodes for which comments will be closed")
+                        ).form_select(t('Execute'), 'comment_closer_cycle_period',
+                            variable_get('comment_closer_cycle_period', array('daily')),
+                            $cycle_length_list, t('Time between comment closings')
+                        );
+  return $output;
+}
+
+function _comment_closer_node_select($nodetypes){
+  if ($nodetypes == 0) {
+    return '';
+  } else {
+    foreach ($nodetypes as $nodetype_index){
+      $node_condition[] = "(type='$nodetype_index')";
+    }
+    return " AND (".implode(" OR ", $node_condition).')';
+  }
+}
+
+function comment_closer_cron() {
+
+  $now = time();
+  $current_date = getdate($now);
+  $next_cycle_time = variable_get('comment_closer_next_date', $now);
+
+  if ($now >= $next_cycle_time) {
+    //set it up
+    $limit = variable_get('comment_closer_age', 'month');
+    switch ($limit) {
+      case 'month': {
+        $current_date['mon'] = $current_date['mon'] - 1;
+        break;
+      }
+      case 'year': {
+        $current_date['year'] = $current_date['year'] - 1;
+        break;
+      }
+      case 'week': {
+        $current_date['mday'] = $current_date['mday'] - 7;
+        break;
+      }
+    }
+    $process_node_type_list = variable_get('comment_closer_types', 0);
+    $oldest_allowed = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
+
+    // knock it out
+    $qstr = "UPDATE {node} SET comment = 1 WHERE (created < $oldest_allowed) ".
+                        _comment_closer_node_select($process_node_type_list);
+
+    $result = db_query($qstr);
+
+    // clean it up
+    $current_date = getdate();
+
+    switch (variable_get('comment_closer_cycle_period', 'weekly')) {
+      case 'monthly': {
+        $current_date['mon'] = $current_date['mon'] + 1;
+        break;
+      }
+      case 'yearly': {
+        $current_date['year'] = $current_date['year'] + 1;
+        break;
+      }
+      case 'weekly': {
+        $current_date['mday'] = $current_date['mday'] + 7;
+        break;
+      }
+      case 'daily': {
+        $current_date['mday'] = $current_date['mday'] + 1;
+        break;
+      }
+    }
+  $comment_closer_next_date = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
+
+    variable_set('comment_closer_next_date',$comment_closer_next_date);
+  }
+}
+
+?>
