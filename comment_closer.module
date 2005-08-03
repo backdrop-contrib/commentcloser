@@ -27,7 +27,7 @@ function comment_closer_help($section) {
 
 function _comment_closer_nodeoptions($nodetypes){
 
-  foreach($nodetypes as $nodetypename){
+  foreach($nodetypes as $nodetypename => $nodetypemodule){
     $optionarray[$nodetypename] = $nodetypename;
   }
   return $optionarray;
