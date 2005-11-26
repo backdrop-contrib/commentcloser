@@ -4,7 +4,6 @@
   *comment_closer.module
   *Automatically close comments on nodes beyond a configurable age
 */
-
 function comment_closer_help($section) {
   switch($section) {
     case 'admin/block/help':
@@ -26,16 +25,13 @@ function comment_closer_help($section) {
 }
 
 function _comment_closer_nodeoptions($nodetypes){
-
-  foreach($nodetypes as $nodetype => $nodetypename){
-    $optionarray[$nodetypename] = $nodetypename;
-  }
-  return $optionarray;
+  return drupal_map_assoc($nodetypes);
 }
 
 function comment_closer_settings() {
   // list of node types to affect
   // age of nodes to close comments on
+  ///this next line must be replaced
   $nodetypes = node_get_types();
   $age_limit_list = array('year' => t('year'),
                           'month' => t('month'),
@@ -46,19 +42,26 @@ function comment_closer_settings() {
                           'quarterly' => t('quarterly'),
                           'weekly' => t('weekly'),
                           'daily' => t('daily'));
-  $output = form_select(t('Node types'), 'comment_closer_types',
-                          variable_get('comment_closer_types', _comment_closer_nodeoptions($nodetypes)),
-                          _comment_closer_nodeoptions($nodetypes),
-                          t('Types of nodes for which comments will be closed'),
-                          'size="'.($nodetype_count < 5 ? $nodetype_count: 5).'"', 1).
-                          form_select(t('Older than'), 'comment_closer_age',
-                            variable_get('comment_closer_age', 'month'),
-                            $age_limit_list, t("Age of nodes for which comments will be closed")
-                        ).form_select(t('Execute'), 'comment_closer_cycle_period',
-                            variable_get('comment_closer_cycle_period', array('daily')),
-                            $cycle_length_list, t('Time between comment closings')
-                        );
-  return $output;
+  $search_form['comment_closer_types'] = array(
+    '#type' => 'select',
+    '#multiple' => '1',
+    '#title' => t('Node types'),
+    '#default_value' => variable_get('comment_closer_types', _comment_closer_nodeoptions($nodetypes)),
+    '#options' => _comment_closer_nodeoptions($nodetypes)
+  );
+  $search_form['comment_closer_age'] = array(
+    '#type' => 'select',
+    '#title' => t('Older than'),
+    '#default_value' => variable_get('comment_closer_age', 'month'),
+    '#options' => $age_limit_list
+  );
+  $search_form['comment_closer_cycle_period'] = array(
+    '#type' => 'select',
+    '#title' => t('Execute'),
+    '#default_value' => variable_get('comment_closer_cycle_period', array('daily')),
+    '#options' => $cycle_length_list,
+  );
+  return $search_form;
 }
 
 function _comment_closer_node_select($nodetypes){
