@@ -42,26 +42,26 @@ function comment_closer_settings() {
                           'quarterly' => t('quarterly'),
                           'weekly' => t('weekly'),
                           'daily' => t('daily'));
-  $search_form['comment_closer_types'] = array(
+  $cc_form['comment_closer_types'] = array(
     '#type' => 'select',
     '#multiple' => '1',
     '#title' => t('Node types'),
     '#default_value' => variable_get('comment_closer_types', _comment_closer_nodeoptions($nodetypes)),
     '#options' => _comment_closer_nodeoptions($nodetypes)
   );
-  $search_form['comment_closer_age'] = array(
+  $cc_form['comment_closer_age'] = array(
     '#type' => 'select',
     '#title' => t('Older than'),
     '#default_value' => variable_get('comment_closer_age', 'month'),
     '#options' => $age_limit_list
   );
-  $search_form['comment_closer_cycle_period'] = array(
+  $cc_form['comment_closer_cycle_period'] = array(
     '#type' => 'select',
     '#title' => t('Execute'),
     '#default_value' => variable_get('comment_closer_cycle_period', array('daily')),
     '#options' => $cycle_length_list,
   );
-  return $search_form;
+  return system_settings_form($cc_form);
 }
 
 function _comment_closer_node_select($nodetypes){
@@ -142,4 +142,13 @@ function comment_closer_cron() {
   }
 }
 
-?>
+function comment_closer_menu() {
+ $items[] = array(
+    'path' => 'admin/settings/comment_closer',
+    'title' => t('Comment closer'),
+    'description' => t('Set age, frequency and types of nodes for which comments will be closed.'),
+    'callback' => 'drupal_get_form',
+    'callback arguments' => 'comment_closer_settings',
+    'access' => user_access('administer site configuration'),
+   );
+}
