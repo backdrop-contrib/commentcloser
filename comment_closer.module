@@ -108,7 +108,7 @@ function comment_closer_cron() {
     // knock it out
     $qstr = "UPDATE {node} SET comment = 1 WHERE (created < $oldest_allowed) ".
                         _comment_closer_node_select($process_node_type_list);
-
+    cache_clear_all();
     $result = db_query($qstr);
 
     // clean it up
