@@ -25,7 +25,7 @@ function comment_closer_help($section) {
 }
 
 function _comment_closer_nodeoptions($nodetypes){
-  return drupal_map_assoc($nodetypes);
+  return drupal_map_assoc(array_keys($nodetypes));
 }
 
 function comment_closer_settings() {
@@ -33,6 +33,7 @@ function comment_closer_settings() {
   // age of nodes to close comments on
   ///this next line must be replaced
   $nodetypes = node_get_types();
+
   $age_limit_list = array('year' => t('year'),
                           'month' => t('month'),
                           'quarterly' => t('quarterly'),
@@ -142,13 +143,14 @@ function comment_closer_cron() {
   }
 }
 
-function comment_closer_menu() {
- $items[] = array(
+function comment_closer_menu($may_cache) {
+	$items[] = array(
     'path' => 'admin/settings/comment_closer',
     'title' => t('Comment closer'),
     'description' => t('Set age, frequency and types of nodes for which comments will be closed.'),
     'callback' => 'drupal_get_form',
     'callback arguments' => 'comment_closer_settings',
     'access' => user_access('administer site configuration'),
-   );
+  );
+  return $items;
 }
