@@ -51,7 +51,7 @@ function comment_closer_settings() {
     '#type' => 'select',
     '#multiple' => '1',
     '#title' => t('Node types'),
-    '#default_value' => variable_get('comment_closer_types', _comment_closer_nodeoptions()),
+    '#default_value' => variable_get('comment_closer_types', array_keys(_comment_closer_nodeoptions())),
     '#options' => _comment_closer_nodeoptions()
   );
   $cc_form['comment_closer_age'] = array(
