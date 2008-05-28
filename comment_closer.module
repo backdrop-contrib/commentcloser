@@ -1,11 +1,12 @@
 <?php
-/* $Id$ */
+// $Id$ 
 /**
+  * @file
   *comment_closer.module
   *Automatically close comments on nodes beyond a configurable age
 */
 function comment_closer_help($path, $arg) {
-  switch($path) {
+  switch ($path) {
     case 'admin/block/help':
       return t('<p>Automatically close comments</p>');
       break;
@@ -24,7 +25,7 @@ function comment_closer_help($path, $arg) {
   return $output;
 }
 
-function _comment_closer_nodeoptions($nodetypes){
+function _comment_closer_nodeoptions($nodetypes) {
   return drupal_map_assoc(array_keys($nodetypes));
 }
 
@@ -65,14 +66,15 @@ function comment_closer_settings() {
   return system_settings_form($cc_form);
 }
 
-function _comment_closer_node_select($nodetypes){
+function _comment_closer_node_select($nodetypes) {
   if ($nodetypes == 0 || ! is_array($nodetypes) || ! count($nodetypes) ) {
     return '';
-  } else {
-    foreach ($nodetypes as $nodetype_index){
+  } 
+  else {
+    foreach ($nodetypes as $nodetype_index) {
       $node_condition[] = "(type='$nodetype_index')";
     }
-    return " AND (".implode(" OR ", $node_condition).')';
+    return " AND (".implode(" OR ", $node_condition).")";
   }
 }
 
@@ -107,10 +109,14 @@ function comment_closer_cron() {
     $oldest_allowed = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
 
     // knock it out
-    $qstr = "UPDATE {node} SET comment = 1 WHERE (created < $oldest_allowed) ".
-                        _comment_closer_node_select($process_node_type_list);
+//    $qstr = "UPDATE {node} SET comment = 1 WHERE (created < $oldest_allowed) ".
+//                        _comment_closer_node_select($process_node_type_list);
     cache_clear_all();
-    $result = db_query($qstr);
+    $result = db_query(
+      "UPDATE {node} SET comment = 1 WHERE (created < '%d') '%s'",
+      $oldest_allowed,
+      _comment_closer_node_select($process_node_type_list)
+      );
 
     // clean it up
     $current_date = getdate();
@@ -139,7 +145,7 @@ function comment_closer_cron() {
     }
   $comment_closer_next_date = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
 
-    variable_set('comment_closer_next_date',$comment_closer_next_date);
+    variable_set('comment_closer_next_date', $comment_closer_next_date);
   }
 }
 
