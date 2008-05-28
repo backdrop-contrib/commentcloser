@@ -1,3 +1,4 @@
-; $Id$
+; $Id:
 name = Comment closer
 description = Schedule automatic closing of comments for selected node types based on the age of the node
+

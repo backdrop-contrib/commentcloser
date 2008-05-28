@@ -1,13 +1,11 @@
 <?php
 /* $Id$ */
-
 /**
   *comment_closer.module
   *Automatically close comments on nodes beyond a configurable age
 */
-
-function comment_closer_help($section) {
-  switch($section) {
+function comment_closer_help($path, $arg) {
+  switch($path) {
     case 'admin/block/help':
       return t('<p>Automatically close comments</p>');
       break;
@@ -26,18 +24,16 @@ function comment_closer_help($section) {
   return $output;
 }
 
-function _comment_closer_nodeoptions(){
-	$nodetypes = node_get_types();
-	foreach ($nodetypes as $machine_name => $node_def) {
-		$option_array[$machine_name] = $node_def->name;
-	}
-	return $option_array;
+function _comment_closer_nodeoptions($nodetypes){
+  return drupal_map_assoc(array_keys($nodetypes));
 }
 
 function comment_closer_settings() {
   // list of node types to affect
   // age of nodes to close comments on
   ///this next line must be replaced
+  $nodetypes = node_get_types();
+
   $age_limit_list = array('year' => t('year'),
                           'month' => t('month'),
                           'quarterly' => t('quarterly'),
@@ -51,8 +47,8 @@ function comment_closer_settings() {
     '#type' => 'select',
     '#multiple' => '1',
     '#title' => t('Node types'),
-    '#default_value' => variable_get('comment_closer_types', array_keys(_comment_closer_nodeoptions())),
-    '#options' => _comment_closer_nodeoptions()
+    '#default_value' => variable_get('comment_closer_types', _comment_closer_nodeoptions($nodetypes)),
+    '#options' => _comment_closer_nodeoptions($nodetypes)
   );
   $cc_form['comment_closer_age'] = array(
     '#type' => 'select',
@@ -147,14 +143,13 @@ function comment_closer_cron() {
   }
 }
 
-function comment_closer_menu($may_cache) {
-	$items[] = array(
-    'path' => 'admin/settings/comment_closer',
-    'title' => t('Comment closer'),
+function comment_closer_menu() {
+  $items['admin/settings/comment_closer'] = array(
+    'title' => 'Comment closer',
     'description' => t('Set age, frequency and types of nodes for which comments will be closed.'),
-    'callback' => 'drupal_get_form',
-    'callback arguments' => 'comment_closer_settings',
-    'access' => user_access('administer site configuration'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('comment_closer_settings'),
+    'access arguments' => array('administer site configuration'),
   );
   return $items;
 }
