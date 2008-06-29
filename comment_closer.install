@@ -1,0 +1,18 @@
+<?php
+// $Id: 
+
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function comment_closer_uninstall() {
+  variable_del('comment_closer_age');
+  variable_del('comment_closer_cycle_period');
+  variable_del('comment_closer_next_date');
+  variable_del('comment_closer_types');
+
+  drupal_set_message(t('Comment Closer module uninstalled.'));
+}
