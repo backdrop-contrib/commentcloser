@@ -102,18 +102,18 @@ function comment_closer_cron() {
       $query = "UPDATE {node} SET comment = 1 WHERE (created < %d)";
       $args[] = $oldest_allowed;
       if (!empty($process_node_type_list) && is_array($process_node_type_list)) {
-        $query .= " AND type IN (" . db_placeholders($process_node_type_list) . ")";
+        $query .= " AND type IN (". db_placeholders($process_node_type_list) .")";
         $args = array_merge($args, $process_node_type_list);
       }
       cache_clear_all();
       $result = db_query($query, $args);
       $msg = 'sql = %sql';
       $vars = array( '%sql' => $query );
-      watchdog('comment_closer',$msg, $vars, WATCHDOG_DEBUG);
+      watchdog('comment_closer', $msg, $vars, WATCHDOG_DEBUG);
       // clean it up
-     $current_date = getdate();
+      $current_date = getdate();
 
-     switch (variable_get('comment_closer_cycle_period', 'weekly')) {
+      switch (variable_get('comment_closer_cycle_period', 'weekly')) {
         case 'monthly': {
           $current_date['mon'] = $current_date['mon'] + 1;
           break;
@@ -127,7 +127,7 @@ function comment_closer_cron() {
           break;
         }
         case 'weekly': {
-         $current_date['mday'] = $current_date['mday'] + 7;
+          $current_date['mday'] = $current_date['mday'] + 7;
           break;
         }
         case 'daily': {
