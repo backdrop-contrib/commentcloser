@@ -107,9 +107,7 @@ function comment_closer_cron() {
       }
       cache_clear_all();
       $result = db_query($query, $args);
-      $msg = 'sql = %sql';
-      $vars = array( '%sql' => $query );
-      watchdog('comment_closer', $msg, $vars, WATCHDOG_DEBUG);
+      watchdog('comment_closer', $query, $args, WATCHDOG_INFO);
       // clean it up
       $current_date = getdate();
 
