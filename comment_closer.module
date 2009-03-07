@@ -25,37 +25,51 @@ function comment_closer_help($path, $arg) {
   return $output;
 }
 
-function _comment_closer_nodeoptions($nodetypes) {
-  return drupal_map_assoc(array_keys($nodetypes));
+function _comment_closer_nodeoptions() {
+  static $nodeoptions = array();
+  if (!count($nodeoptions)) {
+    $nodetypes = node_get_types();
+    foreach ($nodetypes as $key => $value) {
+      $nodeoptions[$key] = $value->name;
+    }
+  }
+  return $nodeoptions;
+}
+
+function _comment_closer_age_options() {
+  return array(
+    'year',
+    'month',
+    'quarterly',
+    'week',
+  );
 }
 
 function comment_closer_settings() {
-  // list of node types to affect
-  // age of nodes to close comments on
-  ///this next line must be replaced
-  $nodetypes = node_get_types();
+  $cc_form = array();
 
-  $age_limit_list = array('year' => t('year'),
-                          'month' => t('month'),
-                          'quarterly' => t('quarterly'),
-                          'week' => t('week'));
-  $cycle_length_list = array(t('yearly') => t('yearly'),
-                          'monthly' => t('monthly'),
-                          'quarterly' => t('quarterly'),
-                          'weekly' => t('weekly'),
-                          'daily' => t('daily'));
+  $cycle_length_list = array(
+    'yearly' => t('yearly'),
+    'monthly' => t('monthly'),
+    'quarterly' => t('quarterly'),
+    'weekly' => t('weekly'),
+    'daily' => t('daily')
+  );
+
   $cc_form['comment_closer_types'] = array(
     '#type' => 'select',
     '#multiple' => '1',
     '#title' => t('Node types'),
-    '#default_value' => variable_get('comment_closer_types', _comment_closer_nodeoptions($nodetypes)),
-    '#options' => _comment_closer_nodeoptions($nodetypes)
+    '#default_value' => variable_get('comment_closer_types', array()),
+    '#options' => _comment_closer_nodeoptions(),
   );
   $cc_form['comment_closer_age'] = array(
-    '#type' => 'select',
+    '#type' => 'textfield',
     '#title' => t('Older than'),
+    '#description' => t('A number of days, or one of the following words: year, quarterly, month, week.'),
     '#default_value' => variable_get('comment_closer_age', 'month'),
-    '#options' => $age_limit_list
+    '#size' => 10,
+    '#required' => TRUE,
   );
   $cc_form['comment_closer_cycle_period'] = array(
     '#type' => 'select',
@@ -66,6 +80,13 @@ function comment_closer_settings() {
   return system_settings_form($cc_form);
 }
 
+function comment_closer_settings_validate($form, &$form_state) {
+  $age = $form_state['values']['comment_closer_age'];
+  if (!in_array($age, _comment_closer_age_options()) && !preg_match('/^\d+$/', $age)) {
+    form_set_error('comment_closer_age', t('The field "Older than" should be a positive number of days, or one of the following words: year, quarterly, month, week.'));
+  }
+}
+
 function comment_closer_cron() {
 
   $now = time();
@@ -74,44 +95,56 @@ function comment_closer_cron() {
   $process_node_type_list = variable_get('comment_closer_types', 0);
 
   if ($now >= $next_cycle_time) {
-    if ($process_node_type_list != 0 || is_array($process_node_type_list) ) {
-      //set it up
-      $limit = variable_get('comment_closer_age', 'month');
-      switch ($limit) {
-        case 'month': {
+    //set it up
+    $limit = variable_get('comment_closer_age', 'month');
+    switch ($limit) {
+      case 'month': {
+        $current_date['mon'] = $current_date['mon'] - 1;
+        break;
+      }
+        case 'quarterly': {
+        $current_date['mon'] = $current_date['mon'] - 3;
+        break;
+      }
+      case 'year': {
+        $current_date['year'] = $current_date['year'] - 1;
+        break;
+      }
+      case 'week': {
+        $current_date['mday'] = $current_date['mday'] - 7;
+        break;
+      }
+      default: {
+        if (preg_match('/^\d+$/', $limit) && (int)$limit > 0) {
+          $current_date['mday'] = $current_date['mday'] - (int)$limit;
+        }
+        else { // default to 1 month
           $current_date['mon'] = $current_date['mon'] - 1;
-          break;
         }
-          case 'quarterly': {
-          $current_date['mon'] = $current_date['mon'] - 3;
-          break;
-        }
-        case 'year': {
-          $current_date['year'] = $current_date['year'] - 1;
-          break;
-        }
-        case 'week': {
-          $current_date['mday'] = $current_date['mday'] - 7;
-          break;
-        }
+        break;
       }
-      $oldest_allowed = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
+    }
+    $oldest_allowed = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
 
-      // knock it out
-      $args = array();
-      $query = "UPDATE {node} SET comment = 1 WHERE (created < %d)";
-      $args[] = $oldest_allowed;
-      if (!empty($process_node_type_list) && is_array($process_node_type_list)) {
-        $query .= " AND type IN (". db_placeholders($process_node_type_list) .")";
-        $args = array_merge($args, $process_node_type_list);
-      }
-      cache_clear_all();
-      $result = db_query($query, $args);
-      watchdog('comment_closer', $query, $args, WATCHDOG_INFO);
-      // clean it up
-      $current_date = getdate();
+    watchdog('comment_closer', 'date_max :'. date('d/m/Y H:i', $oldest_allowed), array(), WATCHDOG_DEBUG);
 
-      switch (variable_get('comment_closer_cycle_period', 'weekly')) {
+    // knock it out
+    $args = array();
+    $query = "UPDATE {node} SET comment = 1 WHERE (created < %d)";
+    $args[] = $oldest_allowed;
+    if (!empty($process_node_type_list) && is_array($process_node_type_list)) {
+      $query .= " AND type IN (". db_placeholders($process_node_type_list) .")";
+      $args = array_merge($args, $process_node_type_list);
+    }
+    cache_clear_all();
+    $result = db_query($query, $args);
+    $msg = 'sql = %sql';
+    $vars = array( '%sql' => $query );
+    watchdog('comment_closer', $msg, $vars, WATCHDOG_DEBUG);
+    // clean it up
+    $current_date = getdate();
+
+    switch (variable_get('comment_closer_cycle_period', 'weekly')) {
         case 'monthly': {
           $current_date['mon'] = $current_date['mon'] + 1;
           break;
@@ -132,10 +165,9 @@ function comment_closer_cron() {
           $current_date['mday'] = $current_date['mday'] + 1;
           break;
         }
-      }
-      $comment_closer_next_date = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
-      variable_set('comment_closer_next_date', $comment_closer_next_date);
     }
+    $comment_closer_next_date = mktime($current_date['hours'], $current_date['minutes'], $current_date['seconds'], $current_date['mon'], $current_date['mday'], $current_date['year']);
+    variable_set('comment_closer_next_date', $comment_closer_next_date);
   }
 }
 
