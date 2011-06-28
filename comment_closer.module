@@ -142,14 +142,22 @@ function theme_comment_closer_notice($node) {
   $age_num = variable_get("comment_closer_age_number_$node->type", 0);
   $age_unit = variable_get("comment_closer_age_unit_$node->type", 'day');
 
-  $when = strtotime("+$age_num $age_unit", $node->created);
+  $type = node_get_types('name', $node);
 
-  $output = '<p class="comment-closer-notice">' . t('Commenting on this @type will be automatically closed on !when.',
-    array(
-      '!when' => format_date($when, 'custom', 'F j, Y'),
-      '@type' => node_get_types('name', $node),
-      )
-    ) . '</p>';
+  // Is commenting active now?
+  if ($node->comment == COMMENT_NODE_READ_WRITE) {
+    $when = strtotime("+$age_num $age_unit", $node->created);
+
+    $output = '<p class="comment-closer-notice">' . t('Commenting on this @type will be automatically closed on !when.',
+      array(
+        '!when' => format_date($when, 'custom', 'F j, Y'),
+        '@type' => $type,
+        )
+      ) . '</p>';
+  }
+  else {
+    $output = '<p class="comment-closer-notice">' . t('Commenting on this @type is closed.', array('@type' => $type)) . '</p>';
+  }
 
   return $output;
 }
@@ -322,7 +330,7 @@ function comment_closer_form_alter(&$form, $form_state, $form_id) {
       $form['comment']['comment_closer']['comment_closer_age'] = array(
         '#type' => 'fieldset',
         '#title' => t('Close commenting after'),
-        '#description' => t('A number of days, weeks, months, or years before which new comments will be disabled. A value of 0 means to not close comments. This is only effective when comments are "Read/Write" (see above).'),
+        '#description' => t('A number of days, weeks, months, or years before which new comments will be disabled. A value of 0 means to not close comments. This is only effective when comments are "Read/Write" (see above). Note: there is no check for the date being beyond the limit of a Unix timestamp (2038).'),
         );
 
       $units = array(
