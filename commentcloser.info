@@ -1,6 +1,7 @@
-; $Id:
 name = Comment closer
-description = Schedule automatic closing of comments for selected node types based on the age of the node
 core = 7.x
+description = "Schedule automatic closing of comments for selected node types based on the age of the node"
+
 files[] = commentcloser.module
 files[] = commentcloser.install
+files[] = commentcloser.test
