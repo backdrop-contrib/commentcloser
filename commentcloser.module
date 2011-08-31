@@ -31,7 +31,7 @@ function commentcloser_help($path, $arg) {
  * Implements hook_menu().
  */
 function commentcloser_menu() {
-  $items['admin/config/content/commentcloser'] = array(
+  $items['admin/config/system/commentcloser'] = array(
     'title' => 'Comment closer',
     'description' => 'Set age, frequency and types of nodes for which comments will be closed.',
     'page callback' => 'drupal_get_form',
