@@ -1,7 +1,7 @@
-name = Comment closer
-core = 7.x
-description = "Schedule automatic closing of comments for selected node types based on the age of the node"
-
-files[] = commentcloser.module
-files[] = commentcloser.install
-files[] = commentcloser.test
+name = Comment Closer
+backdrop = 1.x
+type = module
+description = "Schedule automatic closing of comments for selected node types based on the age of the node."
+package = "Comments"
+dependencies[] = comment
+configure = admin/config/content/commentcloser

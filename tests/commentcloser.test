@@ -8,18 +8,12 @@
 /**
  * Comment closing functionality.
  */
-class CommentCloserTestCase extends DrupalWebTestCase {
-  public static function getInfo() {
-    return array(
-      'name' => 'Comment closing',
-      'description' => 'Test functionality for Comment closer.',
-      'group' => 'Comment closer',
-    );
-  }
+class CommentCloserTestCase extends BackdropWebTestCase {
 
-  function setUp() {
-    // Additionally enable comment module.
-    parent::setUp('comment', 'commentcloser');
+  function setUp($modules = array()) {
+    $modules = array_merge($modules, array('comment', 'commentcloser'));
+    parent::setUp($modules);
+
     // Create some nodes and comments.
     for ($i = 0; $i < 5; $i++) {
       $settings = array(
@@ -33,12 +27,13 @@ class CommentCloserTestCase extends DrupalWebTestCase {
       if ($i == 4) {
         $settings['created'] = REQUEST_TIME - 5000000;
       }
-      $node = $this->drupalCreateNode($settings);
+      $node = $this->BackdropCreateNode($settings);
       $this->createComment($node, 1);
     }
   }
 
   function testCommentCloser() {
+    $config = config('commentcloser.settings');
     // Check that setup worked.
     $nids = db_query("SELECT nid FROM {node}")->fetchAllAssoc('nid');
     $this->assertTrue(count($nids) == 5, t('5 nodes created.'));
@@ -47,22 +42,24 @@ class CommentCloserTestCase extends DrupalWebTestCase {
 
     // Test the settings for node types.
     // Do not show a notice.
-    variable_set('commentcloser_notice_page', 0);
-    variable_set('commentcloser_age_number_page', 0);
+    $config->set('page.notice', 0);
+    $config->set('page.age_number', 0);
+    $config->save();
 
     $nid = key($nids);
     $node = node_load($nid, TRUE);
 
     $string = t('Commenting on this @type will be automatically closed', array('@type' => node_type_get_name($node)));
 
-    $this->drupalGet('node/' . $node->nid);
+    $this->BackdropGet('node/' . $node->nid);
     $this->assertNoText($string, t('Comment closer message not found.'));
 
-    variable_set('commentcloser_notice_page', 1);
-    variable_set('commentcloser_age_number_page', 1);
+    $config->set('page.notice', 1);
+    $config->set('page.age_number', 1);
+    $config->save();
 
     // Do show a notice.
-    $this->drupalGet('node/' . $node->nid);
+    $this->BackdropGet('node/' . $node->nid);
     $this->assertText($string, t('Comment closer message found.'));
 
     // TODO: more granular notice checking.
@@ -72,15 +69,16 @@ class CommentCloserTestCase extends DrupalWebTestCase {
     // Test closing by comment count.
 
     // Set the variables for this content type.
-    variable_set('commentcloser_comment_limit_' . $node->type, 5);
-    variable_set('commentcloser_age_number_' . $node->type, 0);
+    $config->set($node->type . '.comment_limit', 5);
+    $config->set($node->type . '.age_number', 0);
+    $config->save();
     // Check the node count.
     $nids = db_query("SELECT nid FROM {node} WHERE comment = :comment",
       array(':comment' => COMMENT_NODE_OPEN)
       )->fetchAllAssoc('nid');
     $this->assertTrue(count($nids) == 5, t('5 nodes have open comments.'));
 
-    // Create more comments tan the threshold.
+    // Create more comments than the threshold.
     $this->createComment($node, 10);
     // Run the close logic.
     commentcloser_close_all();
@@ -101,8 +99,9 @@ class CommentCloserTestCase extends DrupalWebTestCase {
       array(':comment' => COMMENT_NODE_OPEN)
       )->fetchAllAssoc('nid');
     $this->assertTrue(count($nids) == 4, t('4 nodes have open comments.'));
-    variable_set('commentcloser_comment_limit_' . $node->type, 0);
-    variable_set('commentcloser_age_number_' . $node->type, 1);
+    $config->set($node->type . '.comment_limit', 0);
+    $config->set($node->type . '.age_number', 1);
+    $config->save();
     // Run the close logic.
     commentcloser_close_all();
     // Count the nodes.
@@ -118,27 +117,29 @@ class CommentCloserTestCase extends DrupalWebTestCase {
 
     // Test cron logic.
     // If next date is empty, the cron will run.
-    variable_set('commentcloser_next_date', 0);
+    state_set('commentcloser_next_date', 0);
     $check = commentcloser_check_cron(FALSE);
     $this->assertTrue(empty($check), t('Next cron time not set, cron not invoked.'));
     // If next date is less than now, it won't run.
-    variable_set('commentcloser_next_date', REQUEST_TIME - 100);
+    state_set('commentcloser_next_date', REQUEST_TIME - 100);
     $check = commentcloser_check_cron(FALSE);
     $this->assertTrue(empty($check), t('Next cron time is before now, not invoked.'));
     // Set next date to the future.
-    variable_set('commentcloser_next_date', REQUEST_TIME + 100);
+    state_set('commentcloser_next_date', REQUEST_TIME + 100);
     // Set cycle period to 0, which means it should always run.
-    variable_set('commentcloser_cycle_period', 0);
+    $config->set('cycle_period', 0);
+    $config->save();
     $check = commentcloser_check_cron(FALSE);
     $this->assertTrue(!empty($check), t('Cron interval not set, cron invoked.'));
-    variable_set('commentcloser_cycle_period', 1);
+    $config->set('cycle_period', 1);
+    $config->save();
     // Check again, this time setting the next cron run time.
     $check = commentcloser_check_cron(TRUE);
     $this->assertTrue(!empty($check), t('Cron interval set and due to run, cron invoked.'));
     // Now check that the next cron run value was reset.
-    $next = variable_get('commentcloser_next_date', 0);
+    $next = state_get('commentcloser_next_date', 0);
     // Since REQUEST_TIME is the base, and our interval is 1, that should be
-    // the return value of the variable_get().
+    // the return value of the state_get().
     $this->assertTrue($next = (REQUEST_TIME + 1), t('Next cron interval set.'));
   }
 
@@ -157,18 +158,19 @@ class CommentCloserTestCase extends DrupalWebTestCase {
     $comments = array();
 
     for ($i = 0; $i < $count; $i++) {
-      $comment = array(
+      $comment = entity_create('comment', array(
         'cid' => NULL,
-        'uid' => NULL,
-        'pid' => NULL,
-        'name' => $this->randomName(20),
-        'subject' => $this->randomName(20),
-        'comment' => str_repeat($this->randomName(20) . ' ', 5),
-        'status' => COMMENT_PUBLISHED,
         'nid' => $node->nid,
-      );
-      // Save the comment, which must be an object.
-      $comment = (object) $comment;
+        'node_type' => $node->type,
+        'pid' => 0,
+        'uid' => $this->loggedInUser->uid,
+        'status' => COMMENT_PUBLISHED,
+        'subject' => $this->randomName(),
+        'hostname' => ip_address(),
+        'langcode' => LANGUAGE_NONE,
+        'comment_body' => array(LANGUAGE_NONE => array($this->randomName())),
+      ));
+      // Save the comment.
       comment_save($comment);
       // Add to the array.
       $comments[$comment->cid] = $comment;

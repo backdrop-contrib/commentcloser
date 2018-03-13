@@ -1,0 +1,5 @@
+[CommentCloserTestCase]
+name = Comment closing
+description = Test functionality for Comment closer.
+group = Comment Closer
+file = commentcloser.test
