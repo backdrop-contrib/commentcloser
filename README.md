@@ -30,4 +30,4 @@ Credits
 
 Ported to Backdrop by Herb v/d Dool.
 
-This module was originally written for Drupal (https://drupal.org/project/comment_closer). Drupal maintainers are: [rmiddle](https://www.drupal.org/u/rmiddle), [NancyDru](https://www.drupal.org/u/NancyDru).
+This module was originally written for Drupal (https://drupal.org/project/commentcloser). Drupal maintainers are: [rmiddle](https://www.drupal.org/u/rmiddle), [NancyDru](https://www.drupal.org/u/NancyDru).
