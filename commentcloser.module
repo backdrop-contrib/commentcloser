@@ -54,8 +54,8 @@ function _commentcloser_nodeoptions() {
     $nodetypes = node_type_get_names();
     $config = config('commentcloser.settings');
     foreach ($nodetypes as $type => $name) {
-      $age_unit = $config->get("$type.commentcloser.age_unit");
-      $age_num = $config->get("$type.commentcloser.age_number");
+      $age_unit = $config->get("$type.age_unit");
+      $age_num = $config->get("$type.age_number");
       $com_limit = $config->get("$type.comment_limit");
 
       if ($age_num || $com_limit) {
