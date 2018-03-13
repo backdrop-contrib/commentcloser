@@ -23,11 +23,11 @@ This project is GPL v2 software. See the LICENSE.txt file in this directory for 
 Current Maintainers
 -------------------
 
-This module is currently seeking maintainers. In the meanwhile it will be maintained by Herb v/d Dool.
+Herb v/d Dool (https://github.com/herbdool/).
 
 Credits
 -------
 
-Ported to Backdrop by Herb v/d Dool (https://github.com/herbdool/).
+Ported to Backdrop by Herb v/d Dool.
 
 This module was originally written for Drupal (https://drupal.org/project/comment_closer). Drupal maintainers are: [rmiddle](https://www.drupal.org/u/rmiddle), [NancyDru](https://www.drupal.org/u/NancyDru).

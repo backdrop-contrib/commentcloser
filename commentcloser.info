@@ -1,7 +1,7 @@
 name = Comment Closer
 backdrop = 1.x
 type = module
-description = "Schedule automatic closing of comments for selected node types based on the age of the node."
+description = "Schedule automatic closing of comments for selected content types based on the age of the content."
 package = "Comments"
 dependencies[] = comment
 configure = admin/config/content/commentcloser

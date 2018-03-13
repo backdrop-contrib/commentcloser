@@ -3,7 +3,7 @@
 /**
  * @file
  * commentcloser.module
- * Automatically close comments on nodes beyond a configurable age.
+ * Automatically close comments on content beyond a configurable age.
  */
 
 /**
@@ -12,7 +12,7 @@
 function commentcloser_menu() {
   $items['admin/config/content/commentcloser'] = array(
     'title' => 'Comment Closer',
-    'description' => 'Set age, frequency and types of nodes for which comments will be closed.',
+    'description' => 'Set age, frequency and types of content for which comments will be closed.',
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('commentcloser_settings_form'),
     'access arguments' => array('administer comment closer'),
