@@ -10,14 +10,13 @@
  */
 class CommentCloserTestCase extends BackdropWebTestCase {
 
-  function setUp($modules = array()) {
-    $modules = array_merge($modules, array('comment', 'commentcloser'));
-    parent::setUp($modules);
+  function setUp() {
+    parent::setUp(array('comment', 'commentcloser'));
 
     // Create some nodes and comments.
     for ($i = 0; $i < 5; $i++) {
       $settings = array(
-        'type' => 'page',
+        'type' => 'post',
         'title' => $this->randomName(32),
         'body' => array(LANGUAGE_NONE => array(array($this->randomName(64)))),
         'comment' => COMMENT_NODE_OPEN,
@@ -35,27 +34,35 @@ class CommentCloserTestCase extends BackdropWebTestCase {
   function testCommentCloser() {
     $config = config('commentcloser.settings');
     // Check that setup worked.
-    $nids = db_query("SELECT nid FROM {node}")->fetchAllAssoc('nid');
+    // Out of the box Backdrop creates two nodes so we skip them.
+    $nids = db_query("SELECT nid FROM {node} WHERE nid > 2")->fetchAllAssoc('nid');
+
     $this->assertTrue(count($nids) == 5, t('5 nodes created.'));
     $cids = db_query("SELECT cid FROM {comment}")->fetchAllAssoc('cid');
     $this->assertTrue(count($cids) == 5, t('5 comments created.'));
 
     // Test the settings for node types.
-    // Do not show a notice.
-    $config->set('page.notice', 0);
-    $config->set('page.age_number', 0);
-    $config->save();
-
     $nid = key($nids);
-    $node = node_load($nid, TRUE);
+    $node = node_load($nid, NULL, TRUE);
 
     $string = t('Commenting on this @type will be automatically closed', array('@type' => node_type_get_name($node)));
+
+    // Do not show a notice.
+    $config->set($node->type . '.notice', 0);
+    $config->set($node->type . '.age_number', 0);
+    $config->save();
 
     $this->BackdropGet('node/' . $node->nid);
     $this->assertNoText($string, t('Comment closer message not found.'));
 
-    $config->set('page.notice', 1);
-    $config->set('page.age_number', 1);
+    next($nids);
+    $nid = key($nids);
+    $node = node_load($nid, NULL, TRUE);
+
+    $string = t('Commenting on this @type will be automatically closed', array('@type' => node_type_get_name($node)));
+
+    $config->set($node->type . '.notice', 1);
+    $config->set($node->type . '.age_number', 1);
     $config->save();
 
     // Do show a notice.
@@ -163,7 +170,7 @@ class CommentCloserTestCase extends BackdropWebTestCase {
         'nid' => $node->nid,
         'node_type' => $node->type,
         'pid' => 0,
-        'uid' => $this->loggedInUser->uid,
+        'uid' => NULL,
         'status' => COMMENT_PUBLISHED,
         'subject' => $this->randomName(),
         'hostname' => ip_address(),

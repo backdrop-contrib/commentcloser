@@ -454,7 +454,6 @@ function commentcloser_form_node_type_form_alter(&$form, &$form_state) {
     '#description' => t('If the post receives this many comments, close off further commenting. Leave this at zero (0) for no limit.'),
   );
 
-  // *****************************
   $form['commentcloser']['commentcloser_notice'] = array(
     '#type' => 'radios',
     '#title' => t('Display close notice on posts'),
