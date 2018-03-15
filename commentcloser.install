@@ -6,12 +6,22 @@
  /**
   * Implements of hook_install().
   */
- function commentcloser_install() {
-   $t = get_t();
+function commentcloser_install() {
+  $t = get_t();
 
-   // Be friendly to your users: what to do after install?
-   backdrop_set_message($t('You can now <a href="!commentcloser_admin">configure the Comment Closer module</a> for your site. You will also need to update the settings for each content type where you want comments to be closed by this module.',
-     array('!commentcloser_admin' => url('admin/config/content/commentcloser'))), 'status');
+  // Be friendly to your users: what to do after install?
+  backdrop_set_message($t('You can now <a href="!commentcloser_admin">configure the Comment Closer module</a> for your site. You will also need to update the settings for each content type where you want comments to be closed by this module.',
+    array('!commentcloser_admin' => url('admin/config/content/commentcloser'))), 'status');
+
+  // Update each content type.
+  $config = config('commentcloser.settings');
+  foreach (node_type_get_names() as $type => $name) {
+    $config->set($type . '.age_unit', 'day');
+    $config->set($type . ".age_number", 0);
+    $config->set($type . ".comment_limit", 0);
+    $config->set($type . ".notice", 0);
+  }
+  $config->save();
 }
 
 /**
@@ -44,7 +54,6 @@ function commentcloser_update_1000() {
   update_variable_del('commentcloser_user_block');
 
   // Update each content type.
-
   foreach (node_type_get_names() as $type => $name) {
     $config->set($type . '.age_unit', update_variable_get("comment_closer_age_unit_$type", 'day'));
     update_variable_del("comment_closer_age_unit_$type");
@@ -54,6 +63,9 @@ function commentcloser_update_1000() {
 
     $config->set($type . ".comment_limit", update_variable_get("comment_closer_comment_limit_$type", 0));
     update_variable_del("comment_closer_comment_limit_$type");
+
+    $config->set($type . ".notice", update_variable_get("comment_closer_notice_$type", 0));
+    update_variable_del("comment_closer_notice_$type");
   }
   $config->save();
 }

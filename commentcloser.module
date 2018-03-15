@@ -43,6 +43,15 @@ function commentcloser_config_info() {
 }
 
 /**
+ * Implements hook_node_type_delete().
+ */
+function commentcloser_node_type_delete($info) {
+  $config = config('commentcloser.settings');
+  $config->clear($info->type);
+  $config->save();
+}
+
+/**
  * Get a list of option settings for each node type.
  *
  * @return
@@ -114,7 +123,7 @@ function commentcloser_settings_form($form, &$form_state) {
   );
 
   $form['commentcloser_cycle_period'] = array(
-    '#type' => 'select', '#size' => 3,
+    '#type' => 'select',
     '#title' => t('Run every'),
     '#default_value' => $config->get('cycle_period'),
     '#options' => $cycle_length_list,
@@ -405,6 +414,17 @@ function commentcloser_form_node_type_form_alter(&$form, &$form_state) {
 
   $type = $form['#node_type']->type;
 
+  // Fetch from config or use default.
+  $type_config = $config->get($type);
+  if (!isset($type_config[$type])){
+    $type_config = array(
+      'age_number' => 0,
+      'age_unit' => 'day',
+      'comment_limit' => '',
+      'notice' => 0
+    );
+  }
+
   $form['commentcloser'] = array(
     '#type' => 'fieldset',
     '#title' => t('Comment closer'),
@@ -431,14 +451,14 @@ function commentcloser_form_node_type_form_alter(&$form, &$form_state) {
     '#type' => 'textfield',
     '#size' => 4,
     '#maxlength' => 2,
-    '#default_value' => $config->get($type . '.age_number'),
+    '#default_value' => $type_config['age_number'],
     '#element_validate' => array('_commentcloser_age_validate'),
   );
 
   $form['commentcloser']['commentcloser_age']['commentcloser_age_unit'] = array(
     '#type' => 'select',
     '#options' => $units,
-    '#default_value' => $config->get($type . '.age_unit'),
+    '#default_value' => $type_config['age_unit'],
   );
 
   $form['commentcloser']['commentcloser_age']['or'] = array(
@@ -450,7 +470,7 @@ function commentcloser_form_node_type_form_alter(&$form, &$form_state) {
     '#size' => 4,
     '#maxlength' => 4,
     '#field_suffix' => t('comments'),
-    '#default_value' => $config->get($type . '.comment_limit'),
+    '#default_value' => $type_config['comment_limit'],
     '#description' => t('If the post receives this many comments, close off further commenting. Leave this at zero (0) for no limit.'),
   );
 
@@ -459,7 +479,7 @@ function commentcloser_form_node_type_form_alter(&$form, &$form_state) {
     '#title' => t('Display close notice on posts'),
     '#options' => $noyes,
     '#attributes' => array('class' => array('container-inline')),
-    '#default_value' => $config->get($type . '.notice'),
+    '#default_value' => $type_config['notice'],
     '#description' => t('Checking "yes" will automatically display a notice at the bottom of all posts of enabled content types that states when comments will be closed.'),
   );
   $form['#submit'][] = 'commentcloser_node_type_form_submit';
